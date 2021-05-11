@@ -61,6 +61,7 @@ class OFC:
         self.energies = np.ascontiguousarray(self.energies)
         self.levelsNUM = ofc_variables.levelsNUM
         self.frequency, self.freq12, self.field1FREQ, self.field2FREQ, self.field3FREQ = nonuniform_frequency_range_3(ofc_variables)
+        print(self.frequency)
         # self.omega_chi = np.linspace(0., 1. * ofc_variables.freqDEL * ofc_variables.combNUM, ofc_variables.chiNUM)
         self.omega_chi = np.linspace(6.8e-8, 7.125e-8, ofc_variables.chiNUM + 1)
         self.omega_chi = np.linspace(0, 1.e-5, ofc_variables.chiNUM + 1)
