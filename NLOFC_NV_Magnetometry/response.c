@@ -39,9 +39,9 @@ void copy_ofc_molecule(ofc_molecule* original, ofc_molecule* copy, ofc_parameter
     copy->polarizationINDEX = (cmplx*)malloc(freqNUM*sizeof(cmplx));
     copy->polarizationMOLECULE = (cmplx*)malloc(ensembleNUM*freqNUM*sizeof(cmplx));
     copy->chi1DIST = (cmplx*)malloc(ensembleNUM*chiNUM*sizeof(cmplx));
-    copy->chi3DIST = (cmplx*)malloc(ensembleNUM*chiNUM*sizeof(cmplx));
+    copy->chi3DIST = (cmplx*)malloc(ensembleNUM*chiNUM*chiNUM*sizeof(cmplx));
     copy->chi1INDEX = (cmplx*)malloc(chiNUM*sizeof(cmplx));
-    copy->chi3INDEX = (cmplx*)malloc(chiNUM*sizeof(cmplx));
+    copy->chi3INDEX = (cmplx*)malloc(chiNUM*chiNUM*sizeof(cmplx));
     copy->probabilities = (double*)malloc(ensembleNUM*sizeof(double));
 
 
@@ -51,9 +51,9 @@ void copy_ofc_molecule(ofc_molecule* original, ofc_molecule* copy, ofc_parameter
     memcpy(copy->polarizationINDEX, original->polarizationINDEX, freqNUM*sizeof(cmplx));
     memcpy(copy->polarizationMOLECULE, original->polarizationMOLECULE, ensembleNUM*freqNUM*sizeof(cmplx));
     memcpy(copy->chi1DIST, original->chi1DIST, ensembleNUM*chiNUM*sizeof(cmplx));
-    memcpy(copy->chi3DIST, original->chi3DIST, ensembleNUM*chiNUM*sizeof(cmplx));
+    memcpy(copy->chi3DIST, original->chi3DIST, ensembleNUM*chiNUM*chiNUM*sizeof(cmplx));
     memcpy(copy->chi1INDEX, original->chi1INDEX, chiNUM*sizeof(cmplx));
-    memcpy(copy->chi3INDEX, original->chi3INDEX, chiNUM*sizeof(cmplx));
+    memcpy(copy->chi3INDEX, original->chi3INDEX, chiNUM*chiNUM*sizeof(cmplx));
     memcpy(copy->probabilities, original->probabilities, ensembleNUM*sizeof(double));
 }
 
@@ -141,11 +141,14 @@ void CalculateChi_C(ofc_molecule* ofc_mol, ofc_parameters* ofc_params)
     for(int j=0; j<ofc_params->ensembleNUM; j++)
     {
         Chi1(ensemble[j], ofc_params);
-//        Chi3(ensemble[j], ofc_params);
+        Chi3(ensemble[j], ofc_params);
         for(int i=0; i<ofc_params->chiNUM; i++)
         {
             ofc_mol->chi1DIST[j * ofc_params->chiNUM + i] = ensemble[j]->chi1INDEX[i];
-//            ofc_mol->chi3DIST[j * ofc_params->chiNUM + i] = ensemble[j]->chi3INDEX[i];
+            for(int k=0; k<ofc_params->chiNUM; k++)
+            {
+                ofc_mol->chi3DIST[j * ofc_params->chiNUM * ofc_params->chiNUM + i * ofc_params->chiNUM + k] = ensemble[j]->chi3INDEX[i * ofc_params->chiNUM + k];
+            }
         }
         free_ofc_molecule(ensemble[j]);
     }

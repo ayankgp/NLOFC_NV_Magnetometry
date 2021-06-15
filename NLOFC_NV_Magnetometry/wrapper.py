@@ -44,7 +44,9 @@ class OFCParameters(Structure):
         ('modulations', POINTER(c_double)),
         ('envelopeWIDTH', c_double),
         ('envelopeCENTER', c_double),
-        ('frequencyMC', POINTER(c_double))
+        ('frequencyMC_opt', POINTER(c_double)),
+        ('frequencyMC_RF1', POINTER(c_double)),
+        # ('frequencyMC_RF2', POINTER(c_double))
     ]
 
 

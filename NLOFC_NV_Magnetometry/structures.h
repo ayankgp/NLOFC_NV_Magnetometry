@@ -17,7 +17,9 @@ typedef struct ofc_parameters{
     double* modulations;
     double envelopeWIDTH;
     double envelopeCENTER;
-    double* frequencyMC;
+    double* frequencyMC_opt;
+    double* frequencyMC_RF1;
+//    double* frequencyMC_RF2;
 } ofc_parameters;
 
 typedef struct ofc_molecule{

@@ -52,9 +52,9 @@ class QRD:
         self.field1FREQ = params.field1FREQ
         self.field2FREQ = params.field2FREQ
         self.field3FREQ = params.field3FREQ
-        self.field1 = params.field1 / params.field1.max()
-        self.field2 = params.field2 / params.field2.max()
-        self.field3 = params.field3 / params.field3.max()
+        # self.field1 = params.field1 / params.field1.max()
+        # self.field2 = params.field2 / params.field2.max()
+        # self.field3 = params.field3 / params.field3.max()
         self.round = params.round
         self.basisNUM_FB = params.basisNUM_FB
         self.basiswidth_FB = params.basiswidth_FB
@@ -63,7 +63,6 @@ class QRD:
         self.pol3basisMATRIX = np.empty((self.molNUM, self.basisNUM_FB))
         self.freq2basisMATRIX = np.zeros((self.basisNUM_FB, self.freqNUM))
         self.rangeFREQ = params.rangeFREQ
-        self.rangeFREQ[0] = 0.0
 
 
     def basis_transform(self):
@@ -72,28 +71,32 @@ class QRD:
         # ------------------------------------------------------------------------------------------------------------ #
 
         arrayFREQ_FB = self.frequency[:, np.newaxis, np.newaxis]
-        arrayBASIS_FB = np.linspace(self.rangeFREQ[0] * self.combNUM, self.rangeFREQ[1] * self.combNUM,
-                                    self.basisNUM_FB, endpoint=False)[np.newaxis, :, np.newaxis] * self.freqDEL
+        print(arrayFREQ_FB.shape)
+        print(self.frequency)
+        arrayBASIS_FB = np.linspace(self.rangeFREQ[0], self.rangeFREQ[1],
+                                    self.basisNUM_FB, endpoint=False)[np.newaxis, :, np.newaxis]
+        print(self.rangeFREQ, self.combNUM)
+        print(arrayBASIS_FB)
         BASIS_bw = int((arrayBASIS_FB[0, 1, 0] - arrayBASIS_FB[0, 0, 0]) / self.freqDEL + 0.5)
-        print(BASIS_bw)
+        print(self.rangeFREQ[0] * self.combNUM, self.rangeFREQ[1] * self.combNUM, BASIS_bw)
         arrayCOMB_FB = np.linspace(0., BASIS_bw, self.basiswidth_FB, endpoint=False) * self.freqDEL
 
         arrayFB = (arrayBASIS_FB + arrayCOMB_FB[np.newaxis,  np.newaxis, :])
+        print(arrayFB.shape)
 
         # self.freq2basisMATRIX = self.combGAMMA / ((arrayFREQ_FB - self.omegaM2 * 2 + self.omegaM1 - arrayFB1) ** 2 + self.combGAMMA ** 2) \
         #                    + self.combGAMMA / ((arrayFREQ_FB - self.omegaM1 * 2 + self.omegaM2 - arrayFB2) ** 2 + self.combGAMMA ** 2)
         self.freq2basisMATRIX = self.combGAMMA / ((arrayFREQ_FB - self.omegaM1 - self.omegaM2 + self.omegaM3 - arrayFB) ** 2 + self.combGAMMA ** 2)
 
         self.freq2basisMATRIX = self.freq2basisMATRIX.sum(axis=2)
-        plt.figure()
-        plt.plot(self.freq2basisMATRIX)
 
         self.pol3basisMATRIX = self.pol3_EMPTY.dot(self.freq2basisMATRIX)
+        print(self.pol3basisMATRIX)
 
         fig, ax = plt.subplots(nrows=3, ncols=2, sharex=True, sharey=True, figsize=(11, 11))
         for i in range(3):
-            ax[i, 0].plot(self.pol3_EMPTY[i].real)
-            ax[i, 1].plot(self.pol3_EMPTY[i].imag)
+            ax[i, 0].plot(self.frequency / (timeFACTOR * 2. * np.pi),self.pol3_EMPTY[i].real)
+            ax[i, 1].plot(self.frequency / (timeFACTOR * 2. * np.pi),self.pol3_EMPTY[i].imag)
 
             ax[i][0].set_ylabel("$Re[P^{(3)}(\omega)]$ \n Mol " + str(i + 1), fontsize='x-large')
             ax[i][1].set_ylabel("$Im[P^{(3)}(\omega)]$ \n Mol " + str(i + 1), fontsize='x-large')
@@ -103,6 +106,14 @@ class QRD:
 
         ax[2][0].set_xlabel("Frequency (in THz)", fontsize='x-large')
         ax[2][1].set_xlabel("Frequency (in Thz)", fontsize='x-large')
+
+        # fig, ax = plt.subplots(nrows=3, ncols=2, sharex=True, sharey=True)
+        # for i in range(3):
+        #     ax[i, 0].plot(self.pol3basisMATRIX[i].real)
+        #     ax[i, 1].plot(self.pol3basisMATRIX[i].imag)
+        #
+        #     render_axis(ax[i][0], labelSIZE='xx-large')
+        #     render_axis(ax[i][1], labelSIZE='xx-large')
         return
 
     def calculate_heterodyne(self):
@@ -163,7 +174,7 @@ if __name__ == '__main__':
     import time
 
     # with open('Pickle/pol3.pickle', 'rb') as f:
-    with open('Pickle/P3.pickle', 'rb') as f:
+    with open('Pickle/S3.pickle', 'rb') as f:
             data = pickle.load(f)
         
     molNUM = 3
@@ -174,10 +185,12 @@ if __name__ == '__main__':
     field2FREQ = data['field2FREQ']
     field3FREQ = data['field3FREQ']
     frequency = data['frequency']
+
+    print(frequency)
     freqNUM = frequency.size
-    field1 = data['field1']
-    field2 = data['field2']
-    field3 = data['field3']
+    # field1 = data['field1']
+    # field2 = data['field2']
+    # field3 = data['field3']
 
     with open('Pickle/pol3_args.pickle', 'rb') as f_args:
         data = pickle.load(f_args)
@@ -194,7 +207,7 @@ if __name__ == '__main__':
     envelopeCENTER = data['envelopeCENTER']
     chiNUM = data['chiNUM']
     rangeFREQ = data['rangeFREQ']
-    basisNUM_FB = 25
+    basisNUM_FB = 100
 
     SystemVars = ADict(
         molNUM=molNUM,
@@ -211,9 +224,9 @@ if __name__ == '__main__':
         field1FREQ=field1FREQ,
         field2FREQ=field2FREQ,
         field3FREQ=field3FREQ,
-        field1=field1,
-        field2=field2,
-        field3=field3,
+        # field1=field1,
+        # field2=field2,
+        # field3=field3,
         round=1,
         basisNUM_FB=basisNUM_FB,
         basiswidth_FB=int(combNUM/basisNUM_FB),

@@ -61,7 +61,8 @@ class OFC:
         self.energies = np.ascontiguousarray(self.energies)
         self.levelsNUM = ofc_variables.levelsNUM
         self.frequency, self.freq12, self.field1FREQ, self.field2FREQ, self.field3FREQ = nonuniform_frequency_range_3(ofc_variables)
-        print(self.frequency)
+        print("freqDEL_start_py = ", self.frequency[3] - self.frequency[0])
+
         # self.omega_chi = np.linspace(0., 1. * ofc_variables.freqDEL * ofc_variables.combNUM, ofc_variables.chiNUM)
         self.omega_chi = np.linspace(6.8e-8, 7.125e-8, ofc_variables.chiNUM + 1)
         self.omega_chi = np.linspace(0, 1.e-5, ofc_variables.chiNUM + 1)
@@ -77,9 +78,9 @@ class OFC:
                                                      ofc_variables.basisNUM, ofc_variables.molNUM, self.frequency.size),
                                                     dtype=np.complex)
         self.chi1DIST = np.zeros((ofc_variables.molNUM, ofc_variables.ensembleNUM, self.omega_chi.size), dtype=np.complex)
-        self.chi3DIST = np.zeros((ofc_variables.molNUM, ofc_variables.ensembleNUM, self.omega_chi.size), dtype=np.complex)
+        self.chi3DIST = np.zeros((ofc_variables.molNUM, ofc_variables.ensembleNUM, self.omega_chi.size, self.omega_chi.size), dtype=np.complex)
         self.chi1INDEX = np.zeros((ofc_variables.molNUM, self.omega_chi.size), dtype=np.complex)
-        self.chi3INDEX = np.zeros((ofc_variables.molNUM, self.omega_chi.size), dtype=np.complex)
+        self.chi3INDEX = np.zeros((ofc_variables.molNUM, self.omega_chi.size, self.omega_chi.size), dtype=np.complex)
         self.polINDX = np.empty((ofc_variables.basisNUM, ofc_variables.basisNUM, ofc_variables.basisNUM))
         self.basisINDX = np.empty(3, dtype=int)
         self.indices = np.empty(3, dtype=int)
@@ -124,7 +125,9 @@ class OFC:
         ofc_parameters.modulations = np.zeros(3, dtype=int).ctypes.data_as(POINTER(c_double))
         ofc_parameters.envelopeWIDTH = ofc_variables.envelopeWIDTH
         ofc_parameters.envelopeCENTER = ofc_variables.envelopeCENTER
-        ofc_parameters.frequencyMC = ofc_variables.frequencyMC.ctypes.data_as(POINTER(c_double))
+        ofc_parameters.frequencyMC_opt = ofc_variables.frequencyMC_opt.ctypes.data_as(POINTER(c_double))
+        ofc_parameters.frequencyMC_RF1 = ofc_variables.frequencyMC_RF1.ctypes.data_as(POINTER(c_double))
+        # ofc_parameters.frequencyMC_RF2 = ofc_variables.frequencyMC_RF2.ctypes.data_as(POINTER(c_double))
         return
 
     def calculate_ofc_system(self, ofc_variables):
@@ -147,8 +150,9 @@ class OFC:
                         self.create_ofc_molecule(molENSEMBLE[molINDX], molINDX)
                         for i, modulations in enumerate(list(product(*(3 * [[ofc_variables.omegaM1, ofc_variables.omegaM2, ofc_variables.omegaM3]])))):
                             # if (i == 5) or (i == 7) or (i == 11) or (i == 15) or (i == 19) or (i == 21):
-                            if (i == 5) or (i == 11):
-                                print(i, modulations)
+                            # if (i == 5) or (i == 11):
+                            if (i == 5):
+                                print("Molecule ", molINDX + 1, ": ", i, modulations)
                                 for mINDX, nINDX, vINDX in ofc_variables.modulationINDXlist:
                                     ofc_parameters.indices[0] = mINDX
                                     ofc_parameters.indices[1] = nINDX
@@ -207,6 +211,7 @@ class OFC:
 if __name__ == '__main__':
 
     from matplotlib.cm import get_cmap
+    import pickle
     # --------------------------------------------------------- #
     #                       LIST OF CONSTANTS                   #
     # --------------------------------------------------------- #
@@ -236,7 +241,8 @@ if __name__ == '__main__':
 
     # ------------------ MOLECULAR ENERGY LEVEL STRUCTURE ------------------ #
 
-    magnetic_fields = np.asarray([1.0 + 0.25 * i for i in range(molNUM)]) * 1e-1    # Magnetic Fields are in tesla
+    magnetic_fields = np.asarray([1.0 + 0.5 * i for i in range(molNUM)]) * 1e0    # Magnetic Fields are in tesla
+
 
     def get_energies_due_to_magnetic_field(elec_gap, vib_gap1, vib_gap2, mu_field):
         """
@@ -247,10 +253,9 @@ if __name__ == '__main__':
         """
 
         elec_gap_2ev = energyFACTOR * wavelength2freqFACTOR / elec_gap
-        vib_gap1_2ev = timeFACTOR * vib_gap1 / 1000.
-        vib_gap2_2ev = timeFACTOR * vib_gap2 / 1000.
+        vib_gap1_2ev = 2. * np.pi * timeFACTOR * vib_gap1 / 1000.
+        vib_gap2_2ev = 2. * np.pi * timeFACTOR * vib_gap2 / 1000.
 
-        print(vib_gap1_2ev, vib_gap2_2ev)
         mu_gap_2ev = magneticFACTOR * mu_field
         return [0.00, vib_gap1_2ev - mu_gap_2ev, vib_gap1_2ev + mu_gap_2ev, elec_gap_2ev,
                 elec_gap_2ev + vib_gap2_2ev - mu_gap_2ev, elec_gap_2ev + vib_gap2_2ev + mu_gap_2ev]
@@ -261,7 +266,7 @@ if __name__ == '__main__':
     # electronicENERGYthz = [(wavelength2freqFACTOR / (electronicENERGYnm + 10*i)) * (energyFACTOR / timeFACTOR) for i in range(-1, 2)]
     # levels = np.asarray([[get_energies_due_to_magnetic_field(elecEN, vibrationalENERGYghz_1, vibrationalENERGYghz_2, mu) for elecEN in electronicENERGYthz] for mu in magnetic_fields])
 
-    electronicENERGYthz = [(wavelength2freqFACTOR / (electronicENERGYnm + .5 * en)) * (energyFACTOR / timeFACTOR) for en in range(-1, 2)]
+    electronicENERGYthz = [electronicENERGYnm + .05 * en for en in range(-1, 2)]
     # vibrationalENERGYghz_1 = [vibrationalENERGYghz_1 + 0.0035 * vibEN for vibEN in range(-1, 2)]
     levels = np.asarray([[get_energies_due_to_magnetic_field(elecEN, vibrationalENERGYghz_1, vibrationalENERGYghz_2, mu) for elecEN in electronicENERGYthz] for mu in magnetic_fields])
 
@@ -271,18 +276,13 @@ if __name__ == '__main__':
     rho_0 = np.zeros((levelsNUM, levelsNUM), dtype=np.complex)
     rho_0[0, 0] = 1 + 0j
 
-    MUelec = [0.1]*molNUM
+    MUelec = [1.]*molNUM
     MUvibr = [0.01]*molNUM
-
-    # gammaFACTOR = 1.
-    # gammaPOPD = np.asarray([1., 1., 1.]) * timeFACTOR * gammaFACTOR * 1e-9
-    # gammaVIBR = np.asarray([1., 1., 1.]) * timeFACTOR * gammaFACTOR * 2e-6
-    # gammaELEC = np.asarray([1., 1., 1.]) * timeFACTOR * gammaFACTOR * 25. * 1e-3
 
     gammaFACTOR = 1.
     gammaPOPD = np.asarray([1]*molNUM) * timeFACTOR * gammaFACTOR * 1.e-9
     gammaVIBR = np.asarray([1]*molNUM) * timeFACTOR * gammaFACTOR * 2.e-6
-    gammaELEC = np.asarray([1]*molNUM) * timeFACTOR * gammaFACTOR * 50e-3
+    gammaELEC = np.asarray([1]*molNUM) * timeFACTOR * gammaFACTOR * 25e-3
 
     muMATRIX = np.empty((molNUM, levelsNUM, levelsNUM), dtype=np.complex)
     for _ in range(molNUM):
@@ -329,7 +329,8 @@ if __name__ == '__main__':
     #              OFC PARAMETERS                #
     # -------------------------------------------#
 
-    rangeFREQ = np.asarray([0.063, 0.065]) * timeFACTOR * 1e4
+    rangeFREQ = np.asarray([2.900000000000000, 3.10000000000000]) * timeFACTOR * 1e3
+    rangeFREQ = np.asarray([0.0700000000000000, 0.075000000000000])
     # rangeFREQ = np.asarray([0.0025, 0.0050]) * timeFACTOR
 
     combNUM = 5000
@@ -341,14 +342,14 @@ if __name__ == '__main__':
     unit = (rangeFREQ[1] - rangeFREQ[0]) / (10 * combNUM)
     # print(unit)
     freqDEL = unit * 10
-    omegaM1 = unit * 6
-    omegaM2 = unit * 7
+    omegaM1 = unit * 4
+    omegaM2 = unit * 9
     omegaM3 = unit * 3
-    combGAMMA = 1e-12 * timeFACTOR
-    termsNUM = 3
+    combGAMMA = 1e-15 * timeFACTOR
+    termsNUM = 1
     envelopeWIDTH = 50000
     envelopeCENTER = 0
-    chiNUM = 5000
+    chiNUM = 1000
 
     SystemArgs = dict(
         gammaMATRIXpopd=gammaMATRIXpopd,
@@ -384,38 +385,101 @@ if __name__ == '__main__':
         termsNUM=termsNUM,
         envelopeWIDTH=envelopeWIDTH,
         envelopeCENTER=envelopeCENTER,
-        # modulationINDXlist=[(2, 5, 3), (1, 4, 3), (3, 4, 3), (3, 5, 3)],
         modulationINDXlist=[(2, 5, 3), (1, 4, 3)],
         chiNUM=chiNUM,
-        frequencyMC=np.random.uniform(400., 650., (chiNUM, 3)),
+        frequencyMC_opt=np.linspace(2955., 2960., chiNUM) * timeFACTOR,
+        # frequencyMC_RF1=np.linspace((levels[-1, -1, 4] - levels[-1, -1, 3]) * 0.95, levels[-1, -1, 2] * 1.05, chiNUM),
+        frequencyMC_RF1=np.linspace(.01e-7, 5e-7, chiNUM),
         rangeFREQ=rangeFREQ,
-        # vib1=vibrationalENERGYghz_1*timeFACTOR/1000
     )
 
-    system = OFC(SystemVars, **SystemArgs)
-    system.calculate_susceptibilities(SystemVars)
-    fig, ax = plt.subplots(nrows=1, ncols=1, sharey=True)
-    fig.suptitle("Absorption Spectra")
-    abs = np.empty((molNUM, len(system.omega_chi)))
-    for i in range(molNUM):
-        abs[i] = (system.probabilities[i][:ensembleNUM].T.dot(system.chi1DIST[i])).imag
-        # abs[i] = system.chi1DIST[i].imag
-    abs /= abs.max()
-    GHz_axis = system.omega_chi / timeFACTOR * 1000.
+    if False:
+        system = OFC(SystemVars, **SystemArgs)
+        system.calculate_susceptibilities(SystemVars)
 
-    cmap = get_cmap("tab10")
-    colors = cmap.colors
-    ax.set_prop_cycle(color=colors)
+        np.set_printoptions(precision=10)
+        print("unit = ", unit)
+        print("freqDEL_py = ", system.frequency[3] - system.frequency[0])
 
-    for i in range(molNUM):
-        ax.plot(GHz_axis, abs[i], linewidth=1.25)
+        np.set_printoptions(precision=5)
+        print()
+        print(levels[0, 0, 1], levels[0, 0, 2], levels[0, 0, 3], levels[0, 0, 4] - levels[0, 0, 3], levels[0, 0, 5] - levels[0, 0, 3])
+        print(levels[1, 0, 1], levels[1, 0, 2], levels[1, 0, 3], levels[1, 0, 4] - levels[1, 0, 3], levels[1, 0, 5] - levels[1, 0, 3])
+        print(levels[2, 0, 1], levels[2, 0, 2], levels[2, 0, 3], levels[2, 0, 4] - levels[2, 0, 3], levels[2, 0, 5] - levels[2, 0, 3])
+        print()
 
-        render_axis(ax, gridLINE='')
-        ax.set_ylabel('Simulated \n Normalised \n Absorption', fontsize='x-large')
+        fig_r, axes_r = plt.subplots(nrows=molNUM, ncols=1, sharex=True, sharey=True)
+        fig_r.suptitle('log |$\chi^{(3)}$|')
+        fig_i, axes_i = plt.subplots(nrows=molNUM, ncols=1, sharex=True, sharey=True)
+        fig_i.suptitle('Imaginary Chi(3)')
 
-    plt.subplots_adjust(left=0.2, bottom=None, right=None, top=None, wspace=None, hspace=0.0)
+        i = 0
+        for ax in axes_r.flat:
+            im_r = ax.imshow(np.log10(abs(system.chi3DIST[i][1])), extent=(
+                SystemVars.frequencyMC_RF1.min() / timeFACTOR * 1000.,
+                SystemVars.frequencyMC_RF1.max() / timeFACTOR * 1000.,
+                SystemVars.frequencyMC_opt.max() / (timeFACTOR * 2. * np.pi),
+                SystemVars.frequencyMC_opt.min() / (timeFACTOR * 2. * np.pi),), aspect='auto', cmap='hot')
+
+            ax.set_ylabel(" Optical field (in THz)")
+            ax.set_xlabel(" RF field (in GHz)")
+
+            print(abs(system.chi3DIST[i][1].real).argmin(), abs(system.chi3DIST[i][1].real).argmax())
+            print(abs(system.chi3DIST[i][1].real).min(), abs(system.chi3DIST[i][1].real).max())
+            print(abs(system.chi3DIST[i][1].imag).argmin(), abs(system.chi3DIST[i][1].imag).argmax())
+            print(abs(system.chi3DIST[i][1].imag).min(), abs(system.chi3DIST[i][1].imag).max())
+            i += 1
+        fig_r.colorbar(im_r, ax=axes_r.ravel().tolist())
+
+
+        i = 0
+        for ax in axes_i.flat:
+            im_i = ax.imshow(np.log10(abs(system.chi3DIST[i][1].imag)), extent=(
+                SystemVars.frequencyMC_RF1.min() / timeFACTOR * 1000.,
+                SystemVars.frequencyMC_RF1.max() / timeFACTOR * 1000.,
+                SystemVars.frequencyMC_opt.max() / (timeFACTOR * 2. * np.pi),
+                SystemVars.frequencyMC_opt.min() / (timeFACTOR * 2. * np.pi),), aspect='auto', cmap='hot')
+            print(abs(system.chi3DIST[i][1].imag).argmin(), abs(system.chi3DIST[i][1].imag).argmax())
+            print(abs(system.chi3DIST[i][1].imag).min(), abs(system.chi3DIST[i][1].imag).max())
+            i += 1
+
+        fig_i.colorbar(im_i, ax=axes_i.ravel().tolist())
+        del system
+
+    # x = np.linspace(1, 4, 4, endpoint=True)
+    # y = np.linspace(11, 14, 4, endpoint=True)
+    # z = np.empty((x.size, y.size))
+    # for i in range(4):
+    #     for j in range(4):
+    #         z[i, j] = x[i] * y[j]
+    #
+    # fig, ax = plt.subplots(nrows=1, ncols=1)
+    # # noinspection PyArgumentList
+    # im = ax.imshow(z, extent=(y.min(), y.max(), x.max(), x.min()))
+    # fig.colorbar(im, ax=ax)
+
+    # fig, ax = plt.subplots(nrows=1, ncols=1, sharey=True)
+    # fig.suptitle("Absorption Spectra")
+    # abs = np.empty((molNUM, len(system.omega_chi)))
+    # for i in range(molNUM):
+    #     abs[i] = (system.probabilities[i][:ensembleNUM].T.dot(system.chi1DIST[i])).imag
+    #     # abs[i] = system.chi1DIST[i].imag
+    # abs /= abs.max()
+    # GHz_axis = system.omega_chi / timeFACTOR * 1000.
+    #
+    # cmap = get_cmap("tab10")
+    # colors = cmap.colors
+    # ax.set_prop_cycle(color=colors)
+    #
+    # for i in range(molNUM):
+    #     ax.plot(GHz_axis, abs[i], linewidth=1.25)
+    #
+    #     render_axis(ax, gridLINE='')
+    #     ax.set_ylabel('Simulated \n Normalised \n Absorption', fontsize='x-large')
+    #
+    # plt.subplots_adjust(left=0.2, bottom=None, right=None, top=None, wspace=None, hspace=0.0)
     # ax.set_xlabel('Wavelength (in $nm$)', fontsize='x-large')
-    del system
+
 
     def f_spline(x, y):
         f = interp1d(x, y, kind='quadratic')
@@ -450,24 +514,24 @@ if __name__ == '__main__':
             #     ax2[i, j].plot(system.field3FREQ / timeFACTOR * 1000., field3 / field3.max(), 'm', alpha=0.4)
             diff = system.polarizationTOTALEMPTY[i] - system.polarizationTOTALEMPTY[(i + 1) % molNUM]
 
-            ax[i,0].plot(system.frequency / timeFACTOR, diff.real, color=colors[i], linewidth=.75)
-            x, y = f_spline(system.frequency[1:-1:30] / timeFACTOR, diff.real[1:-1:30])
+            ax[i,0].plot(system.frequency / (timeFACTOR * 2. * np.pi), diff.real, color=colors[i], linewidth=.75)
+            x, y = f_spline(system.frequency[1:-1:30] / (timeFACTOR * 2. * np.pi), diff.real[1:-1:30])
             ax[i,0].plot(x, y, 'k', linewidth=1.75)
 
-            ax[i,1].plot(system.frequency / timeFACTOR, diff.imag, color=colors[i], linewidth=.75)
-            x, y = f_spline(system.frequency[1:-1:30] / timeFACTOR, diff.imag[1:-1:30])
+            ax[i,1].plot(system.frequency / (timeFACTOR * 2. * np.pi), diff.imag, color=colors[i], linewidth=.75)
+            x, y = f_spline(system.frequency[1:-1:30] / (timeFACTOR * 2. * np.pi), diff.imag[1:-1:30])
             ax[i,1].plot(x, y, 'k', linewidth=1.75)
 
             render_axis(ax[i, 0], gridLINE='')
             render_axis(ax[i, 1], gridLINE='')
             # ax2[i, 0].set_xlim(2.75, 3.00)
 
-            ax2[i,0].plot(system.frequency / timeFACTOR, system.polarizationTOTALEMPTY[i].real, 'r', linewidth=.75)
-            x, y = f_spline(system.frequency[1:-1:30] / timeFACTOR, system.polarizationTOTALEMPTY[i].real[1:-1:30])
+            ax2[i,0].plot(system.frequency / (timeFACTOR * 2. * np.pi), system.polarizationTOTALEMPTY[i].real, 'r', linewidth=.75)
+            x, y = f_spline(system.frequency[1:-1:30] / (timeFACTOR * 2. * np.pi), system.polarizationTOTALEMPTY[i].real[1:-1:30])
             ax2[i,0].plot(x, y, 'k', linewidth=1.75)
 
-            ax2[i,1].plot(system.frequency / timeFACTOR, system.polarizationTOTALEMPTY[i].imag, 'b', linewidth=.75)
-            x, y = f_spline(system.frequency[1:-1:30] / timeFACTOR, system.polarizationTOTALEMPTY[i].imag[1:-1:30])
+            ax2[i,1].plot(system.frequency / (timeFACTOR * 2. * np.pi), system.polarizationTOTALEMPTY[i].imag, 'b', linewidth=.75)
+            x, y = f_spline(system.frequency[1:-1:30] / (timeFACTOR * 2. * np.pi), system.polarizationTOTALEMPTY[i].imag[1:-1:30])
             ax2[i,1].plot(x, y, 'k', linewidth=1.75)
 
             render_axis(ax2[i, 0], gridLINE='')
@@ -487,4 +551,35 @@ if __name__ == '__main__':
             for j in range(ensembleNUM):
                 print(np.abs(system.polarizationEMPTY[i][j].imag).max())
         print("Time taken for response calculation: ", time.time() - start)
+
+
+        with open('Pickle/S3.pickle', 'wb') as f:
+            pickle.dump(
+                {
+                    "pol3field": system.polarizationTOTALFIELD,
+                    "pol3empty": system.polarizationTOTALEMPTY,
+                    "field1FREQ": system.field1FREQ,
+                    "field2FREQ": system.field2FREQ,
+                    "field3FREQ": system.field3FREQ,
+                    "frequency": system.frequency
+                },
+                f)
+
+        with open('Pickle/pol3_args.pickle', 'wb') as f:
+            pickle.dump(
+                {
+                    "combNUM": combNUM,
+                    "resolutionNUM": resolutionNUM,
+                    "omegaM1": omegaM1,
+                    "omegaM2": omegaM2,
+                    "omegaM3": omegaM3,
+                    "freqDEL": freqDEL,
+                    "combGAMMA": combGAMMA,
+                    "termsNUM": termsNUM,
+                    "envelopeWIDTH": envelopeWIDTH,
+                    "envelopeCENTER": envelopeCENTER,
+                    "chiNUM": chiNUM,
+                    "rangeFREQ": rangeFREQ
+                },
+                f)
     plt.show()

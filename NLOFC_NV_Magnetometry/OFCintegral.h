@@ -178,7 +178,7 @@ void Chi3terms(ofc_molecule* ofc_mol, ofc_parameters* ofc_params, int m, int n, 
 {
     int l = 0;
     int levelsNUM;
-    double omega_p, omega_q, omega_r;
+    double omega_p, omega_q, omega_r, omega_pqr, omega_pq;
     levelsNUM = ofc_mol->levelsNUM;
     cmplx wg_ml = ofc_mol->energies[m] - ofc_mol->energies[l] + I * ofc_mol->gammaMATRIX[m * levelsNUM + l];
     cmplx wg_nl = ofc_mol->energies[n] - ofc_mol->energies[l] + I * ofc_mol->gammaMATRIX[n * levelsNUM + l];
@@ -190,21 +190,42 @@ void Chi3terms(ofc_molecule* ofc_mol, ofc_parameters* ofc_params, int m, int n, 
     cmplx wg_mn = ofc_mol->energies[m] - ofc_mol->energies[n] + I * ofc_mol->gammaMATRIX[m * levelsNUM + n];
     cmplx wg_nm = ofc_mol->energies[n] - ofc_mol->energies[m] + I * ofc_mol->gammaMATRIX[n * levelsNUM + m];
 
+//    printf("%g + i %g \n", creal(wg_ml), cimag(wg_ml));
+//    printf("%g + i %g \n", creal(wg_nl), cimag(wg_nl));
+//    printf("%g + i %g \n", creal(wg_vl), cimag(wg_vl));
+//    printf("%g + i %g \n", creal(wg_nv), cimag(wg_nv));
+//    printf("%g + i %g \n", creal(wg_mv), cimag(wg_mv));
+//    printf("%g + i %g \n", creal(wg_vm), cimag(wg_vm));
+//    printf("%g + i %g \n", creal(wg_vn), cimag(wg_vn));
+//    printf("%g + i %g \n", creal(wg_mn), cimag(wg_mn));
+//    printf("%g + i %g \n \n", creal(wg_nm), cimag(wg_nm));
+
     for(int out_i = 0; out_i < ofc_params->chiNUM; out_i++)
     {
-        omega_p = ENERGY_FACTOR * WAVELENGTH2FREQ / ofc_params->frequencyMC[out_i * 3 + 0];
-        omega_q = ENERGY_FACTOR * WAVELENGTH2FREQ / ofc_params->frequencyMC[out_i * 3 + 1];
-        omega_r = ENERGY_FACTOR * WAVELENGTH2FREQ / ofc_params->frequencyMC[out_i * 3 + 2];
-        cmplx result = 0. + 0. * I;
-        result += 1./((conj(wg_vl) - (omega_p + omega_q - omega_r)) * (conj(wg_nl) - (omega_p + omega_q)) * (conj(wg_ml) - omega_p));     // (a_1)
-        result += 1./((conj(wg_nv) - (omega_p + omega_q - omega_r)) * (conj(wg_mv) - (omega_p + omega_q)) * (conj(wg_vl) - omega_p));     // (a_2)
-        result += 1./((conj(wg_nv) - (omega_p + omega_q - omega_r)) * (conj(wg_vm) - (omega_p + omega_q)) * (conj(wg_ml) - omega_p));     // (b_1)
-        result += 1./((conj(wg_mn) - (omega_p + omega_q - omega_r)) * (conj(wg_nl) - (omega_p + omega_q)) * (conj(wg_vl) - omega_p));     // (b_2)
-        result += 1./((conj(wg_vn) - (omega_p + omega_q - omega_r)) * (conj(wg_nl) - (omega_p + omega_q)) * (conj(wg_ml) - omega_p));     // (c_1)
-        result += 1./((conj(wg_nm) - (omega_p + omega_q - omega_r)) * (conj(wg_mv) - (omega_p + omega_q)) * (conj(wg_vl) - omega_p));     // (c_2)
-        result += 1./((conj(wg_nm) - (omega_p + omega_q - omega_r)) * (conj(wg_vm) - (omega_p + omega_q)) * (conj(wg_ml) - omega_p));     // (d_1)
-        result += 1./((conj(wg_ml) - (omega_p + omega_q - omega_r)) * (conj(wg_nl) - (omega_p + omega_q)) * (conj(wg_vl) - omega_p));     // (d_2)
-        ofc_mol->chi3INDEX[out_i] += result;
+//        omega_p = ENERGY_FACTOR * WAVELENGTH2FREQ / ofc_params->frequencyMC[out_i * 3 + 0];
+//        omega_q = ENERGY_FACTOR * WAVELENGTH2FREQ / ofc_params->frequencyMC[out_i * 3 + 1];
+//        omega_r = ENERGY_FACTOR * WAVELENGTH2FREQ / ofc_params->frequencyMC[out_i * 3 + 2];
+        for(int out_j = 0; out_j < ofc_params->chiNUM; out_j++)
+        {
+            omega_q = ofc_params->frequencyMC_opt[out_i];
+            omega_p = ofc_params->frequencyMC_RF1[out_j];
+            omega_r = omega_p;
+
+            omega_pqr = omega_p + omega_q - omega_r;
+            omega_pq = omega_p + omega_q;
+
+            cmplx result = 0. + 0. * I;
+            result += 1./((conj(wg_vl) - omega_pqr) * (conj(wg_nl) - omega_pq) * (conj(wg_ml) - omega_p));     // (a_1)
+            result += 1./((conj(wg_nv) - omega_pqr) * (conj(wg_mv) - omega_pq) * (wg_vl + omega_p));     // (a_2)
+            result += 1./((conj(wg_nv) - omega_pqr) * (wg_vm + omega_pq) * (conj(wg_ml) - omega_p));     // (b_1)
+            result += 1./((conj(wg_mn) - omega_pqr) * (wg_nl + omega_pq) * (wg_vl + omega_p));     // (b_2)
+            result += 1./((wg_vn + omega_pqr) * (conj(wg_nl) - omega_pq) * (conj(wg_ml) - omega_p));     // (c_1)
+            result += 1./((wg_nm + omega_pqr) * (conj(wg_mv) - omega_pq) * (wg_vl + omega_p));     // (c_2)
+            result += 1./((wg_nm + omega_pqr) * (wg_vm + omega_pq) * (conj(wg_ml) - omega_p));     // (d_1)
+            result += 1./((wg_ml + omega_pqr) * (wg_nl + omega_pq) * (wg_vl + omega_p));     // (d_2)
+            ofc_mol->chi3INDEX[out_i * ofc_params->chiNUM + out_j] += result;
+//            ofc_mol->chi3INDEX[out_i * ofc_params->chiNUM + out_j] = result;
+        }
     }
 }
 
@@ -213,10 +234,24 @@ void Chi3(ofc_molecule* ofc_mol, ofc_parameters* ofc_params)
 {
     long m, n, v, l;
 
-    Chi3terms(ofc_mol, ofc_params, 1, 2, 3);
-    Chi3terms(ofc_mol, ofc_params, 1, 3, 2);
-    Chi3terms(ofc_mol, ofc_params, 2, 1, 3);
-    Chi3terms(ofc_mol, ofc_params, 2, 3, 1);
-    Chi3terms(ofc_mol, ofc_params, 3, 1, 2);
-    Chi3terms(ofc_mol, ofc_params, 3, 2, 1);
+//    Chi3terms(ofc_mol, ofc_params, 1, 2, 3);
+//    Chi3terms(ofc_mol, ofc_params, 1, 3, 2);
+//    Chi3terms(ofc_mol, ofc_params, 2, 1, 3);
+//    Chi3terms(ofc_mol, ofc_params, 2, 3, 1);
+//    Chi3terms(ofc_mol, ofc_params, 3, 1, 2);
+//    Chi3terms(ofc_mol, ofc_params, 3, 2, 1);
+    Chi3terms(ofc_mol, ofc_params, 2, 5, 3);
+//    Chi3terms(ofc_mol, ofc_params, 2, 3, 5);
+//    Chi3terms(ofc_mol, ofc_params, 3, 2, 5);
+//    Chi3terms(ofc_mol, ofc_params, 3, 5, 2);
+//    Chi3terms(ofc_mol, ofc_params, 5, 2, 3);
+//    Chi3terms(ofc_mol, ofc_params, 5, 3, 2);
+    Chi3terms(ofc_mol, ofc_params, 1, 4, 3);
+//    Chi3terms(ofc_mol, ofc_params, 1, 3, 4);
+//    Chi3terms(ofc_mol, ofc_params, 3, 1, 4);
+//    Chi3terms(ofc_mol, ofc_params, 3, 4, 1);
+//    Chi3terms(ofc_mol, ofc_params, 4, 1, 3);
+//    Chi3terms(ofc_mol, ofc_params, 4, 3, 1);
+
+
 }
