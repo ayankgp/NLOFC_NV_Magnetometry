@@ -151,7 +151,7 @@ class OFC:
                         for i, modulations in enumerate(list(product(*(3 * [[ofc_variables.omegaM1, ofc_variables.omegaM2, ofc_variables.omegaM3]])))):
                             # if (i == 5) or (i == 7) or (i == 11) or (i == 15) or (i == 19) or (i == 21):
                             # if (i == 5) or (i == 11):
-                            if (i == 5):
+                            if i == 5:
                                 print("Molecule ", molINDX + 1, ": ", i, modulations)
                                 for mINDX, nINDX, vINDX in ofc_variables.modulationINDXlist:
                                     ofc_parameters.indices[0] = mINDX
@@ -232,16 +232,16 @@ if __name__ == '__main__':
 
     molNUM = 3
     levelsNUM = 6
-    ensembleNUM = 3
+    ensembleNUM = 1
     groundNUM = 3
     excitedNUM = levelsNUM - groundNUM
 
     # probabilities = np.asarray([[0.167, 0.096, 0.033, 0.103, 0.008, 0.118, 0.039, 0.112, 0.081, 0.088, 0.155]]*molNUM)
-    probabilities = np.asarray([[0.25, 0.45, 0.30]]*molNUM)
+    probabilities = np.asarray([[0.10, 0.15, 0.20, 0.25, 0.20, 0.5, 0.5]]*molNUM)
 
     # ------------------ MOLECULAR ENERGY LEVEL STRUCTURE ------------------ #
 
-    magnetic_fields = np.asarray([1.0 + 0.5 * i for i in range(molNUM)]) * 1e0    # Magnetic Fields are in tesla
+    magnetic_fields = np.asarray([1.0 + 0.3 * i for i in range(molNUM)]) * 1e0    # Magnetic Fields are in tesla
 
 
     def get_energies_due_to_magnetic_field(elec_gap, vib_gap1, vib_gap2, mu_field):
@@ -266,10 +266,11 @@ if __name__ == '__main__':
     # electronicENERGYthz = [(wavelength2freqFACTOR / (electronicENERGYnm + 10*i)) * (energyFACTOR / timeFACTOR) for i in range(-1, 2)]
     # levels = np.asarray([[get_energies_due_to_magnetic_field(elecEN, vibrationalENERGYghz_1, vibrationalENERGYghz_2, mu) for elecEN in electronicENERGYthz] for mu in magnetic_fields])
 
-    electronicENERGYthz = [electronicENERGYnm + .05 * en for en in range(-1, 2)]
+    electronicENERGYthz = [electronicENERGYnm + .04 * en for en in range(-3, 3)]
     # vibrationalENERGYghz_1 = [vibrationalENERGYghz_1 + 0.0035 * vibEN for vibEN in range(-1, 2)]
     levels = np.asarray([[get_energies_due_to_magnetic_field(elecEN, vibrationalENERGYghz_1, vibrationalENERGYghz_2, mu) for elecEN in electronicENERGYthz] for mu in magnetic_fields])
 
+    print(levels[1,0,2] - levels[0,0,2], levels[2,0,2] - levels[1,0,2])
     # sys.exit()
     # ------------------------ INITIAL DENSITY MATRIX ---------------------- #
 
@@ -281,8 +282,8 @@ if __name__ == '__main__':
 
     gammaFACTOR = 1.
     gammaPOPD = np.asarray([1]*molNUM) * timeFACTOR * gammaFACTOR * 1.e-9
-    gammaVIBR = np.asarray([1]*molNUM) * timeFACTOR * gammaFACTOR * 2.e-6
-    gammaELEC = np.asarray([1]*molNUM) * timeFACTOR * gammaFACTOR * 25e-3
+    gammaVIBR = np.asarray([1]*molNUM) * timeFACTOR * gammaFACTOR * 2.5e-6
+    gammaELEC = np.asarray([1]*molNUM) * timeFACTOR * gammaFACTOR * 50e-3
 
     muMATRIX = np.empty((molNUM, levelsNUM, levelsNUM), dtype=np.complex)
     for _ in range(molNUM):
@@ -329,24 +330,26 @@ if __name__ == '__main__':
     #              OFC PARAMETERS                #
     # -------------------------------------------#
 
-    rangeFREQ = np.asarray([2.900000000000000, 3.10000000000000]) * timeFACTOR * 1e3
-    rangeFREQ = np.asarray([0.0700000000000000, 0.075000000000000])
+    # rangeFREQ = np.asarray([2.900000000000000, 3.10000000000000]) * timeFACTOR * 1e3
+    # rangeFREQ = np.asarray([0.0700000000000000, 0.075000000000000])
+    # rangeFREQ = np.asarray([0.071430000000000, 0.07163000000000])
     # rangeFREQ = np.asarray([0.0025, 0.0050]) * timeFACTOR
+    rangeFREQ = np.asarray([-8, 8]) * 1e-6
 
-    combNUM = 5000
+    combNUM = 10000
     resolutionNUM = 3
     # omegaM1 = 2.772 * timeFACTOR * 1.e-6
     # omegaM2 = 1.980 * timeFACTOR * 1.e-6
     # omegaM3 = 0.792 * timeFACTOR * 1.e-6
     # freqDEL = 3.960 * timeFACTOR * 1.e-6
     unit = (rangeFREQ[1] - rangeFREQ[0]) / (10 * combNUM)
-    # print(unit)
+    print(unit)
     freqDEL = unit * 10
     omegaM1 = unit * 4
     omegaM2 = unit * 9
     omegaM3 = unit * 3
     combGAMMA = 1e-15 * timeFACTOR
-    termsNUM = 1
+    termsNUM = 3
     envelopeWIDTH = 50000
     envelopeCENTER = 0
     chiNUM = 1000
@@ -385,7 +388,8 @@ if __name__ == '__main__':
         termsNUM=termsNUM,
         envelopeWIDTH=envelopeWIDTH,
         envelopeCENTER=envelopeCENTER,
-        modulationINDXlist=[(2, 5, 3), (1, 4, 3)],
+        # modulationINDXlist=[(2, 5, 3), (1, 4, 3)],
+        modulationINDXlist=[(3, 5, 2), (3, 4, 1)],
         chiNUM=chiNUM,
         frequencyMC_opt=np.linspace(2955., 2960., chiNUM) * timeFACTOR,
         # frequencyMC_RF1=np.linspace((levels[-1, -1, 4] - levels[-1, -1, 3]) * 0.95, levels[-1, -1, 2] * 1.05, chiNUM),
@@ -568,6 +572,7 @@ if __name__ == '__main__':
         with open('Pickle/pol3_args.pickle', 'wb') as f:
             pickle.dump(
                 {
+                    "molNUM": molNUM,
                     "combNUM": combNUM,
                     "resolutionNUM": resolutionNUM,
                     "omegaM1": omegaM1,
