@@ -91,19 +91,17 @@ def nonuniform_frequency_range_3(params):
     range2 = params.rangeFREQ[1]
     timeFACTOR = 2.418884e-5
 
-    print("rangeFREQ = ", params.rangeFREQ)
+    omega_bar = params.omegaM1 + params.omegaM2 - params.omegaM3
+    np.set_printoptions(precision=10)
     pointsFREQpolarization = np.linspace(range1, range2, params.combNUM + 1, endpoint=True)[:, np.newaxis]
-    print("omegaM1 = ", params.omegaM1)
-    print("omegaM2 = ", params.omegaM2)
-    print("omegaM3 = ", params.omegaM3)
-
 
     pointsFREQcomb = np.linspace(range1, range2, params.combNUM + 1, endpoint=True)[:, np.newaxis]
     resolution = np.linspace(-0.001 * params.freqDEL, 0.001 * params.freqDEL, params.resolutionNUM, endpoint=True)
+    print(pointsFREQpolarization[2499:2501])
 
-    frequency_123 = params.omegaM1 + params.omegaM2 - params.omegaM3 + pointsFREQpolarization + resolution
+    frequency_123 = omega_bar + pointsFREQpolarization + resolution
 
-    # frequency_123 = params.omegaM1 + params.omegaM2 - params.omegaM3 + pointsFREQpolarization
+    # frequency_123 = omega_M0 + pointsFREQpolarization
     field1FREQ = params.omegaM1 + pointsFREQcomb + resolution
     field2FREQ = params.omegaM2 + pointsFREQcomb + resolution
     field3FREQ = params.omegaM3 + pointsFREQcomb + resolution
@@ -111,7 +109,11 @@ def nonuniform_frequency_range_3(params):
     # frequency = np.sort(np.hstack([frequency_123.flatten(), field1FREQ.flatten(), field2FREQ.flatten(), field3FREQ.flatten()]))
     frequency = np.sort(np.hstack([frequency_123.flatten()]))
     print("freqDEL = ", frequency[3] - frequency[0])
+    print("FREQ values = ", frequency[1], frequency[3] - frequency[0], frequency[-1])
+    print(params.omegaM1 + params.omegaM2 - params.omegaM3)
 
+    print(frequency[0], frequency[-1])
+    print(frequency[3*2499:3*2501])
     field1FREQ = np.ascontiguousarray(field1FREQ.flatten())
     field2FREQ = np.ascontiguousarray(field2FREQ.flatten())
     field3FREQ = np.ascontiguousarray(field3FREQ.flatten())

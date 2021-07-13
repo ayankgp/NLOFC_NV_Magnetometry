@@ -149,8 +149,6 @@ class OFC:
                     for molINDX in range(ofc_variables.molNUM):
                         self.create_ofc_molecule(molENSEMBLE[molINDX], molINDX)
                         for i, modulations in enumerate(list(product(*(3 * [[ofc_variables.omegaM1, ofc_variables.omegaM2, ofc_variables.omegaM3]])))):
-                            # if (i == 5) or (i == 7) or (i == 11) or (i == 15) or (i == 19) or (i == 21):
-                            # if (i == 5) or (i == 11):
                             if i == 5:
                                 print("Molecule ", molINDX + 1, ": ", i, modulations)
                                 for mINDX, nINDX, vINDX in ofc_variables.modulationINDXlist:
@@ -236,12 +234,11 @@ if __name__ == '__main__':
     groundNUM = 3
     excitedNUM = levelsNUM - groundNUM
 
-    # probabilities = np.asarray([[0.167, 0.096, 0.033, 0.103, 0.008, 0.118, 0.039, 0.112, 0.081, 0.088, 0.155]]*molNUM)
     probabilities = np.asarray([[0.10, 0.15, 0.20, 0.25, 0.20, 0.5, 0.5]]*molNUM)
 
     # ------------------ MOLECULAR ENERGY LEVEL STRUCTURE ------------------ #
 
-    magnetic_fields = np.asarray([1.0 + 0.3 * i for i in range(molNUM)]) * 1e-4    # Magnetic Fields are in tesla
+    magnetic_fields = np.asarray([1.0 + 0.3 * i for i in range(molNUM)]) * 1e-2    # Magnetic Fields are in tesla
 
 
     def get_energies_due_to_magnetic_field(elec_gap, vib_gap1, vib_gap2, mu_field):
@@ -262,18 +259,13 @@ if __name__ == '__main__':
 
     energies = np.empty((molNUM, levelsNUM))
 
-
-    # electronicENERGYthz = [(wavelength2freqFACTOR / (electronicENERGYnm + 10*i)) * (energyFACTOR / timeFACTOR) for i in range(-1, 2)]
-    # levels = np.asarray([[get_energies_due_to_magnetic_field(elecEN, vibrationalENERGYghz_1, vibrationalENERGYghz_2, mu) for elecEN in electronicENERGYthz] for mu in magnetic_fields])
-
-    electronicENERGYthz = [electronicENERGYnm + .04 * en for en in range(2, 3)]
-    # vibrationalENERGYghz_1 = [vibrationalENERGYghz_1 + 0.0035 * vibEN for vibEN in range(-1, 2)]
+    electronicENERGYthz = [electronicENERGYnm + .04 * en for en in range(-3, -3 + ensembleNUM)]
     levels = np.asarray([[get_energies_due_to_magnetic_field(elecEN, vibrationalENERGYghz_1, vibrationalENERGYghz_2, mu) for elecEN in electronicENERGYthz] for mu in magnetic_fields])
 
+    # print(levels)
     print(levels / (2. * np.pi * timeFACTOR / 1000.))
-    # sys.exit()
-    # ------------------------ INITIAL DENSITY MATRIX ---------------------- #
 
+    # ------------------------ INITIAL DENSITY MATRIX ---------------------- #
     rho_0 = np.zeros((levelsNUM, levelsNUM), dtype=np.complex)
     rho_0[0, 0] = 1 + 0j
 
@@ -297,6 +289,7 @@ if __name__ == '__main__':
                 [0.0 + 0.0j, 0.0 + 0.0j, MUelec[_] + 0.0j, MUvibr[_] + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j]
             ]
         )
+
     gammaMATRIXpopd = [np.ones((levelsNUM, levelsNUM), dtype=np.float) * gammaPOPD[i] for i in range(molNUM)]
     gammaMATRIXdephasing = [np.ones((levelsNUM, levelsNUM), dtype=np.float) * gammaVIBR[i] for i in range(molNUM)]
     for i in range(molNUM):
@@ -328,30 +321,23 @@ if __name__ == '__main__':
     #              OFC PARAMETERS                #
     # -------------------------------------------#
 
-    # rangeFREQ = np.asarray([2.900000000000000, 3.10000000000000]) * timeFACTOR * 1e3
-    # rangeFREQ = np.asarray([0.0700000000000000, 0.075000000000000])
-    # rangeFREQ = np.asarray([0.071430000000000, 0.07163000000000])
-    # rangeFREQ = np.asarray([0.0025, 0.0050]) * timeFACTOR
+    nu_0 = levels[1,0,2] - levels[0,0,2]
+    nu_bar = levels[0,0,2]
+    print(nu_0, nu_bar)
+    rangeFREQ = np.asarray([nu_bar - nu_0, nu_bar + molNUM * nu_0])
 
-    nu_0 = levels[1, 0, 2] - levels[0, 0, 2]
-    nu_bar = levels[0, 0, 2]
-    # rangeFREQ = np.asarray([nu_bar - 100 * nu_0, nu_bar + 100 * nu_0])
-    print("nu values ", nu_0, nu_bar)
-    rangeFREQ = np.asarray([2, 6]) * 1e-7
-
-    combNUM = 20000
+    combNUM = 1000
     resolutionNUM = 3
-    freqDEL = (rangeFREQ[1] - rangeFREQ[0]) / combNUM
+
+    freqDEL = (molNUM + 1) * nu_0 / combNUM
+    print(freqDEL)
     unit = freqDEL / 10
     omegaM1 = unit * 4
     omegaM2 = unit * 9
     omegaM3 = unit * 3
-    # unit = (rangeFREQ[1] - rangeFREQ[0]) / (10 * combNUM)
-    # freqDEL = unit * 10
-    # omegaM1 = unit * 4
-    # omegaM2 = unit * 9
-    # omegaM3 = unit * 3
-    combGAMMA = 1e-15 * timeFACTOR
+
+    # combGAMMA = 1e-15 * timeFACTOR
+    combGAMMA = freqDEL / 100000
     termsNUM = 3
     envelopeWIDTH = 50000
     envelopeCENTER = 0
@@ -391,11 +377,9 @@ if __name__ == '__main__':
         termsNUM=termsNUM,
         envelopeWIDTH=envelopeWIDTH,
         envelopeCENTER=envelopeCENTER,
-        # modulationINDXlist=[(2, 5, 3), (1, 4, 3)],
         modulationINDXlist=[(3, 5, 2), (3, 4, 1)],
         chiNUM=chiNUM,
         frequencyMC_opt=np.linspace(2955., 2960., chiNUM) * timeFACTOR,
-        # frequencyMC_RF1=np.linspace((levels[-1, -1, 4] - levels[-1, -1, 3]) * 0.95, levels[-1, -1, 2] * 1.05, chiNUM),
         frequencyMC_RF1=np.linspace(.01e-7, 5e-7, chiNUM),
         rangeFREQ=rangeFREQ,
     )
@@ -405,15 +389,6 @@ if __name__ == '__main__':
         system.calculate_susceptibilities(SystemVars)
 
         np.set_printoptions(precision=10)
-        print("unit = ", unit)
-        print("freqDEL_py = ", system.frequency[3] - system.frequency[0])
-
-        np.set_printoptions(precision=5)
-        print()
-        print(levels[0, 0, 1], levels[0, 0, 2], levels[0, 0, 3], levels[0, 0, 4] - levels[0, 0, 3], levels[0, 0, 5] - levels[0, 0, 3])
-        print(levels[1, 0, 1], levels[1, 0, 2], levels[1, 0, 3], levels[1, 0, 4] - levels[1, 0, 3], levels[1, 0, 5] - levels[1, 0, 3])
-        print(levels[2, 0, 1], levels[2, 0, 2], levels[2, 0, 3], levels[2, 0, 4] - levels[2, 0, 3], levels[2, 0, 5] - levels[2, 0, 3])
-        print()
 
         fig_r, axes_r = plt.subplots(nrows=molNUM, ncols=1, sharex=True, sharey=True)
         fig_r.suptitle('log |$\chi^{(3)}$|')
@@ -453,41 +428,6 @@ if __name__ == '__main__':
         fig_i.colorbar(im_i, ax=axes_i.ravel().tolist())
         del system
 
-    # x = np.linspace(1, 4, 4, endpoint=True)
-    # y = np.linspace(11, 14, 4, endpoint=True)
-    # z = np.empty((x.size, y.size))
-    # for i in range(4):
-    #     for j in range(4):
-    #         z[i, j] = x[i] * y[j]
-    #
-    # fig, ax = plt.subplots(nrows=1, ncols=1)
-    # # noinspection PyArgumentList
-    # im = ax.imshow(z, extent=(y.min(), y.max(), x.max(), x.min()))
-    # fig.colorbar(im, ax=ax)
-
-    # fig, ax = plt.subplots(nrows=1, ncols=1, sharey=True)
-    # fig.suptitle("Absorption Spectra")
-    # abs = np.empty((molNUM, len(system.omega_chi)))
-    # for i in range(molNUM):
-    #     abs[i] = (system.probabilities[i][:ensembleNUM].T.dot(system.chi1DIST[i])).imag
-    #     # abs[i] = system.chi1DIST[i].imag
-    # abs /= abs.max()
-    # GHz_axis = system.omega_chi / timeFACTOR * 1000.
-    #
-    # cmap = get_cmap("tab10")
-    # colors = cmap.colors
-    # ax.set_prop_cycle(color=colors)
-    #
-    # for i in range(molNUM):
-    #     ax.plot(GHz_axis, abs[i], linewidth=1.25)
-    #
-    #     render_axis(ax, gridLINE='')
-    #     ax.set_ylabel('Simulated \n Normalised \n Absorption', fontsize='x-large')
-    #
-    # plt.subplots_adjust(left=0.2, bottom=None, right=None, top=None, wspace=None, hspace=0.0)
-    # ax.set_xlabel('Wavelength (in $nm$)', fontsize='x-large')
-
-
     def f_spline(x, y):
         f = interp1d(x, y, kind='quadratic')
         x_new = np.linspace(x[0], x[-1], num=5000, endpoint=True)
@@ -506,61 +446,50 @@ if __name__ == '__main__':
 
         cmap = get_cmap("Set1")
         colors = cmap.colors
-        # field1, field2, field3 = plot_field_pol_params(system, SystemVars, rangeFREQ)
 
-        maxPOL = np.abs(system.polarizationTOTALEMPTY.real).max()
+        maxPOL = np.abs(system.polarizationTOTALEMPTY).max()
+        for i in range(molNUM):
+            system.polarizationTOTALEMPTY[i].real /= maxPOL
+            system.polarizationTOTALEMPTY[i].imag /= maxPOL
+
         field1, field2, field3 = plot_field_pol_params(system, SystemVars, rangeFREQ)
         field1 /= field1.max()
         field2 /= field2.max()
         field3 /= field3.max()
 
         for i in range(molNUM):
-            system.polarizationTOTALEMPTY[i].real /= maxPOL
-            system.polarizationTOTALEMPTY[i].imag /= maxPOL
-
-        for i in range(molNUM):
-            # ax[i+3,0].plot(system.frequency / timeFACTOR * 1000., system.polarizationTOTALEMPTY[i].real - system.polarizationTOTALEMPTY[(i + 1)%3].real, linewidth=1.25)
-            # for j in range(2):
-            #     ax2[i, j].plot(system.field1FREQ / timeFACTOR * 1000., field1 / field1.max(), 'g')
-            #     ax2[i, j].plot(system.field2FREQ / timeFACTOR * 1000., field2 / field2.max(), 'y')
-            #     ax2[i, j].plot(system.field3FREQ / timeFACTOR * 1000., field3 / field3.max(), 'm', alpha=0.4)
             diff = system.polarizationTOTALEMPTY[i] - system.polarizationTOTALEMPTY[(i + 1) % molNUM]
 
             ax[i,0].plot(system.frequency / (timeFACTOR * 2. * np.pi / 1000.), diff.real, color=colors[i], linewidth=.75)
-            x, y = f_spline(system.frequency[1:-1:30] / (timeFACTOR * 2. * np.pi / 1000.), diff.real[1:-1:30])
+            # x, y = f_spline(system.frequency[1:-1:30] / (timeFACTOR * 2. * np.pi), diff.real[1:-1:30])
             # ax[i,0].plot(x, y, 'k', linewidth=1.75)
 
             ax[i,1].plot(system.frequency / (timeFACTOR * 2. * np.pi / 1000.), diff.imag, color=colors[i], linewidth=.75)
-            x, y = f_spline(system.frequency[1:-1:30] / (timeFACTOR * 2. * np.pi / 1000.), diff.imag[1:-1:30])
+            # x, y = f_spline(system.frequency[1:-1:30] / (timeFACTOR * 2. * np.pi), diff.imag[1:-1:30])
             # ax[i,1].plot(x, y, 'k', linewidth=1.75)
 
             render_axis(ax[i, 0], gridLINE='')
             render_axis(ax[i, 1], gridLINE='')
-            # ax2[i, 0].set_xlim(2.75, 3.00)
 
             ax2[i,0].plot(system.frequency / (timeFACTOR * 2. * np.pi / 1000.), system.polarizationTOTALEMPTY[i].real, 'r*-', linewidth=.75)
-            # x, y = f_spline(system.frequency[1:-1:30] / (timeFACTOR * 2. * np.pi / 1000.), system.polarizationTOTALEMPTY[i].real[1:-1:30])
             # ax2[i,0].plot(system.field1FREQ / (timeFACTOR * 2. * np.pi / 1000.), field1, 'y')
             # ax2[i,0].plot(system.field2FREQ / (timeFACTOR * 2. * np.pi / 1000.), field2, 'g')
             # ax2[i,0].plot(system.field3FREQ / (timeFACTOR * 2. * np.pi / 1000.), field3, 'm')
+            # x, y = f_spline(system.frequency[1:-1:30] / (timeFACTOR * 2. * np.pi), system.polarizationTOTALEMPTY[i].real[1:-1:30])
             # ax2[i,0].plot(x, y, 'k', linewidth=1.75)
 
             ax2[i,1].plot(system.frequency / (timeFACTOR * 2. * np.pi / 1000.), system.polarizationTOTALEMPTY[i].imag, 'b*-', linewidth=.75)
-            # x, y = f_spline(system.frequency[1:-1:30] / (timeFACTOR * 2. * np.pi / 1000.), system.polarizationTOTALEMPTY[i].imag[1:-1:30])
+            # x, y = f_spline(system.frequency[1:-1:30] / (timeFACTOR * 2. * np.pi), system.polarizationTOTALEMPTY[i].imag[1:-1:30])
             # ax2[i,1].plot(x, y, 'k', linewidth=1.75)
 
             render_axis(ax2[i, 0], gridLINE='')
             render_axis(ax2[i, 1], gridLINE='')
-            # ax2[i, 0].set_xlim(2.75, 3.00)
             ax2[i, 0].set_ylim(-1.2, 1.2)
+            ax2[i, 0].ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+            ax2[i, 1].ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+            ax[i, 0].ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+            ax[i, 1].ticklabel_format(style='sci', axis='x', scilimits=(0,0))
 
-            # sns.lineplot(system.frequency / timeFACTOR * 1000., system.polarizationTOTALEMPTY[i].real, linewidth=1, ax=ax[i,0])
-            # sns.lineplot(system.frequency / timeFACTOR * 1000., system.polarizationTOTALEMPTY[i].imag, linewidth=1, ax=ax[i,1])
-
-        # fig, ax = plt.subplots(nrows=molNUM, ncols=ensembleNUM, sharex=True, sharey=True)
-        # for i in range(molNUM):
-        #     for j in range(ensembleNUM):
-        #         ax[i][j].plot(system.polarizationEMPTY[i][j].imag, 'k')
 
         for i in range(molNUM):
             for j in range(ensembleNUM):

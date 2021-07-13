@@ -104,13 +104,22 @@ void CalculatePol3Response(ofc_molecule* ofc_mol, ofc_parameters* ofc_params)
     //==========================================================================================//
 
     pol3(ofc_mol, ofc_params, -conj(wg_vl), -conj(wg_nl), -conj(wg_ml), -1);
-    pol3(ofc_mol, ofc_params, -conj(wg_nv), -conj(wg_mv),        wg_vl,  1);
-    pol3(ofc_mol, ofc_params, -conj(wg_nv),        wg_vm, -conj(wg_ml),  1);
-    pol3(ofc_mol, ofc_params, -conj(wg_mn),        wg_nl,        wg_vl, -1);
-    pol3(ofc_mol, ofc_params,        wg_vn, -conj(wg_nl), -conj(wg_ml),  1);
-    pol3(ofc_mol, ofc_params,        wg_nm, -conj(wg_mv),        wg_vl, -1);
-    pol3(ofc_mol, ofc_params,        wg_nm,        wg_vm, -conj(wg_ml), -1);
-    pol3(ofc_mol, ofc_params,        wg_ml,        wg_nl,        wg_vl,  1);
+//    pol3(ofc_mol, ofc_params, -conj(wg_nv), -conj(wg_mv),        wg_vl,  1);
+//    pol3(ofc_mol, ofc_params, -conj(wg_nv),        wg_vm, -conj(wg_ml),  1);
+//    pol3(ofc_mol, ofc_params, -conj(wg_mn),        wg_nl,        wg_vl, -1);
+//    pol3(ofc_mol, ofc_params,        wg_vn, -conj(wg_nl), -conj(wg_ml),  1);
+//    pol3(ofc_mol, ofc_params,        wg_nm, -conj(wg_mv),        wg_vl, -1);
+//    pol3(ofc_mol, ofc_params,        wg_nm,        wg_vm, -conj(wg_ml), -1);
+//    pol3(ofc_mol, ofc_params,        wg_ml,        wg_nl,        wg_vl,  1);
+
+//    pol3(ofc_mol, ofc_params, conj(wg_vl), conj(wg_nl), conj(wg_ml), -1);
+//    pol3(ofc_mol, ofc_params, conj(wg_nv), conj(wg_mv),        -wg_vl,  1);
+//    pol3(ofc_mol, ofc_params, conj(wg_nv),        -wg_vm, conj(wg_ml),  1);
+//    pol3(ofc_mol, ofc_params, conj(wg_mn),        -wg_nl,        -wg_vl, -1);
+//    pol3(ofc_mol, ofc_params,        -wg_vn, conj(wg_nl), conj(wg_ml),  1);
+//    pol3(ofc_mol, ofc_params,        -wg_nm, conj(wg_mv),        -wg_vl, -1);
+//    pol3(ofc_mol, ofc_params,        -wg_nm,        -wg_vm, conj(wg_ml), -1);
+//    pol3(ofc_mol, ofc_params,        -wg_ml,        -wg_nl,        -wg_vl,  1);
 
     //========== TERMS CORRESPONDING TO Chi^(3)(w2, w1, w3) ==============//
 //    pol3(ofc_mol, ofc_params, -conj(wg_vl), -conj(wg_ml), -conj(wg_nl), -1);

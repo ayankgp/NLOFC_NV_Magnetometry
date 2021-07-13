@@ -92,8 +92,8 @@ class QRD:
 
         fig, ax = plt.subplots(nrows=molNUM, ncols=2, sharex=True, sharey=True, figsize=(11, 11))
         for i in range(molNUM):
-            ax[i, 0].plot(self.frequency / (timeFACTOR * 2. * np.pi),self.pol3_EMPTY[i].real)
-            ax[i, 1].plot(self.frequency / (timeFACTOR * 2. * np.pi),self.pol3_EMPTY[i].imag)
+            ax[i, 0].plot(self.frequency / (timeFACTOR * 2. * np.pi / 1000),self.pol3_EMPTY[i].real)
+            ax[i, 1].plot(self.frequency / (timeFACTOR * 2. * np.pi / 1000),self.pol3_EMPTY[i].imag)
 
             ax[i][0].set_ylabel("$Re[P^{(3)}(\omega)]$ \n Mol " + str(i + 1), fontsize='x-large')
             ax[i][1].set_ylabel("$Im[P^{(3)}(\omega)]$ \n Mol " + str(i + 1), fontsize='x-large')
@@ -101,8 +101,8 @@ class QRD:
             render_axis(ax[i][0], labelSIZE='xx-large')
             render_axis(ax[i][1], labelSIZE='xx-large')
 
-        ax[2][0].set_xlabel("Frequency (in THz)", fontsize='x-large')
-        ax[2][1].set_xlabel("Frequency (in Thz)", fontsize='x-large')
+        ax[2][0].set_xlabel("Frequency (in GHz)", fontsize='x-large')
+        ax[2][1].set_xlabel("Frequency (in Ghz)", fontsize='x-large')
 
         # fig, ax = plt.subplots(nrows=3, ncols=2, sharex=True, sharey=True)
         # for i in range(3):
@@ -123,7 +123,7 @@ class QRD:
         ImatFREQ = np.empty((self.molNUM, self.molNUM), dtype=np.complex)
 
         basisAXIS = np.arange(self.basisNUM_FB)
-        envelopeBASIS = (np.exp(-(basisAXIS - 0.55 * self.basisNUM_FB)**2 / (2 * (self.basisNUM_FB * 0.035) ** 2)))
+        envelopeBASIS = (np.exp(-(basisAXIS - 0.595 * self.basisNUM_FB)**2 / (2 * (self.basisNUM_FB * 0.0035) ** 2)))
 
         for molINDX in range(self.molNUM):
             Q_mat[molINDX], R_mat[molINDX] = np.linalg.qr(np.delete(self.pol3basisMATRIX.real.T, molINDX, 1), mode='complete')
@@ -146,8 +146,8 @@ class QRD:
         shaped_het_imag = heterodyne_imag.dot(self.freq2basisMATRIX.T)
         fig, ax = plt.subplots(nrows=molNUM, ncols=2, sharex=True, sharey=True, figsize=(11, 11))
         for i in range(molNUM):
-            ax[i][0].plot(self.frequency / (timeFACTOR * 2. * np.pi), shaped_het_real[i] / shaped_het_real.max(), colors[i], alpha=alphas[i])
-            ax[i][1].plot(self.frequency / (timeFACTOR * 2. * np.pi), shaped_het_imag[i] / shaped_het_imag.max(), colors[i], alpha=alphas[i])
+            ax[i][0].plot(self.frequency / (timeFACTOR * 2. * np.pi / 1000), shaped_het_real[i] / shaped_het_real.max(), colors[i], alpha=alphas[i])
+            ax[i][1].plot(self.frequency / (timeFACTOR * 2. * np.pi / 1000), shaped_het_imag[i] / shaped_het_imag.max(), colors[i], alpha=alphas[i])
             ax[i][0].set_ylabel("$Re[E_{het}(\omega)]$ -- Mol " + str(i + 1), fontsize='x-large')
             ax[i][1].set_ylabel("$Im[E_{het}(\omega)]$ -- Mol " + str(i + 1), fontsize='x-large')
             # ax[i][0].set_xlim(2125, 2155)
@@ -155,12 +155,14 @@ class QRD:
 
             render_axis(ax[i][0], labelSIZE='xx-large')
             render_axis(ax[i][1], labelSIZE='xx-large')
+        ax[2][0].set_xlabel("Frequency (in GHz)", fontsize='x-large')
+        ax[2][1].set_xlabel("Frequency (in Ghz)", fontsize='x-large')
 
         fig, ax = plt.subplots(nrows=molNUM, ncols=2, sharex=True, sharey=True, figsize=(11, 11))
         for i in range(molNUM):
-            ax[i][0].plot(self.frequency / (timeFACTOR * 2. * np.pi), (shaped_het_real[i] - shaped_het_real[(i+1)%molNUM]) / shaped_het_real.max(),
+            ax[i][0].plot(self.frequency / (timeFACTOR * 2. * np.pi / 1000), (shaped_het_real[i] - shaped_het_real[(i+1)%molNUM]) / shaped_het_real.max(),
                           colors[i], alpha=alphas[i])
-            ax[i][1].plot(self.frequency / (timeFACTOR * 2. * np.pi), (shaped_het_real[i] - shaped_het_real[(i+1)%molNUM]) / shaped_het_imag.max(),
+            ax[i][1].plot(self.frequency / (timeFACTOR * 2. * np.pi / 1000), (shaped_het_real[i] - shaped_het_real[(i+1)%molNUM]) / shaped_het_imag.max(),
                           colors[i], alpha=alphas[i])
             ax[i][0].set_ylabel("$\delta Re[E_{het}(\omega)]$ -- Mol " + str(i + 1), fontsize='x-large')
             ax[i][1].set_ylabel("$\delta Im[E_{het}(\omega)]$ -- Mol " + str(i + 1), fontsize='x-large')
@@ -173,8 +175,8 @@ class QRD:
         # for j in range(molNUM - 1):
             # ax[j][0].get_xaxis().set_ticks([])
             # ax[j][1].get_xaxis().set_ticks([])
-        ax[2][0].set_xlabel("Frequency (in THz)", fontsize='x-large')
-        ax[2][1].set_xlabel("Frequency (in Thz)", fontsize='x-large')
+        ax[2][0].set_xlabel("Frequency (in GHz)", fontsize='x-large')
+        ax[2][1].set_xlabel("Frequency (in Ghz)", fontsize='x-large')
 
         return
 
@@ -197,11 +199,11 @@ if __name__ == '__main__':
     frequency = data['frequency']
     freqNUM = frequency.size
 
-    n1, n2 = 3.5, 3.1
-    # frequency = frequency[int(freqNUM/n1):int(freqNUM/n2)]
-    # polarizationTOTALEMPTY = polarizationTOTALEMPTY[:,int(freqNUM/n1):int(freqNUM/n2)]
-    # polarizationTOTALFIELD = polarizationTOTALFIELD[:,int(freqNUM/n1):int(freqNUM/n2)]
-    # rangeFREQ = [frequency[0], frequency[-1]]
+    n1, n2 = 0.585, 0.615
+    frequency = frequency[int(freqNUM*n1):int(freqNUM*n2)]
+    polarizationTOTALEMPTY = polarizationTOTALEMPTY[:,int(freqNUM*n1):int(freqNUM*n2)]
+    polarizationTOTALFIELD = polarizationTOTALFIELD[:,int(freqNUM*n1):int(freqNUM*n2)]
+    rangeFREQ = [frequency[0], frequency[-1]]
 
     # plt.plot(frequency, polarizationTOTALEMPTY.real.T)
     # plt.show()
@@ -225,7 +227,7 @@ if __name__ == '__main__':
     envelopeWIDTH = data['envelopeWIDTH']
     envelopeCENTER = data['envelopeCENTER']
     chiNUM = data['chiNUM']
-    basisNUM_FB = 400
+    basisNUM_FB = 1000
     rangeFREQ = data['rangeFREQ']
 
     SystemVars = ADict(
